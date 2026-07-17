@@ -1,0 +1,30 @@
+{
+  "name": "govready-lab",
+  "version": "1.0.0",
+  "description": "Hutchrok GovReady Lab — Phase 1 Contract Map generator. Ingests a client intake + a raw SAM.gov CSV export and produces a fit-scored Contract Map (.xlsx) and branded Lab Dashboard (.html).",
+  "type": "module",
+  "bin": {
+    "govready": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "govready": "tsx src/cli.ts",
+    "demo": "tsx src/cli.ts generate --intake examples/intake.example.json --contracts examples/sam_contract_export.example.csv --assistance examples/sam_assistance_export.example.csv --out out/demo --today 2026-07-17",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": ["sam.gov", "federal-contracts", "govready", "hutchrok"],
+  "author": "Fee The Developer / Hutchrok Solutions Group LLC",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "commander": "^12.1.0",
+    "csv-parse": "^5.5.6",
+    "exceljs": "^4.4.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.9.0"
+  }
+}

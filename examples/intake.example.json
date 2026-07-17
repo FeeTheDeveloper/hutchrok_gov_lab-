@@ -1,0 +1,35 @@
+{
+  "company": "Lone Star Facility Services LLC",
+  "entityType": "LLC",
+  "state": "Texas",
+  "yearFounded": 2019,
+  "uei": "ABC123DEF456",
+  "cage": "9ABC1",
+  "employees": "12",
+  "revenueRange": "$1M–$2M",
+  "certifications": {
+    "smallBusiness": true,
+    "sdvosb": true,
+    "vosb": true,
+    "wosb": false,
+    "edwosb": false,
+    "eightA": false,
+    "hubzone": false
+  },
+  "naicsLanes": ["541611", "541511"],
+  "strengths": "Business operations support, data analysis, staff training, and hands-on federal facility experience. We run back-office operations for mission-driven organizations and stand up reporting/analytics that leadership actually uses.",
+  "strengthKeywords": ["operations", "data", "analysis", "training", "facility", "federal"],
+  "geographicRange": "regional",
+  "interestedIn": "both",
+  "revenueGoal": "$3M from government work in 24 months",
+  "readiness": {
+    "samRegistered": true,
+    "ueiCage": true,
+    "repsAndCerts": true,
+    "vetCertVerification": "complete",
+    "capabilityStatement": false,
+    "pastPerformanceFile": false,
+    "financialStatements": false,
+    "grantReadiness": false
+  }
+}

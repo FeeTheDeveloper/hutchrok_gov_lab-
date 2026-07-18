@@ -119,35 +119,37 @@ export function renderDashboard(report: Report): string {
   :root { color-scheme: light dark; }
   .viz-root {
     color-scheme: light;
-    --surface-1: #fcfcfb; --page: #f9f9f7;
-    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
-    --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
-    --seq-1: #86b6ef; --seq-2: #5598e7; --seq-3: #2a78d6; --seq-4: #1c5cab;
-    --bar: #2a78d6; --bar-track: #cde2fb;
-    --critical: #d03b3b; --good: #0ca30c; --good-text: #006300; --accent: #2a78d6;
+    --surface-1: #ffffff; --page: #f4f5f7;
+    --text-primary: #0f2e5e; --text-secondary: #496487; --text-muted: #6c7f99;
+    --grid: #d6dce6; --baseline: #8ba1be; --border: rgba(15,46,94,0.14);
+    --seq-1: #86a3c5; --seq-2: #4f83be; --seq-3: #285d9b; --seq-4: #0f2e5e;
+    --bar: #0f2e5e; --bar-track: #dbe6f3;
+    --critical: #b2392d; --good: #2f7a4f; --good-text: #215f3c;
+    --accent: #c6982f; --accent-2: #2f7a4f;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) .viz-root {
       color-scheme: dark;
-      --surface-1: #1a1a19; --page: #0d0d0d;
-      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
-      --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
-      --seq-1: #6da7ec; --seq-2: #3987e5; --seq-3: #256abf; --seq-4: #184f95;
-      --bar: #3987e5; --bar-track: #184f95;
-      --critical: #d03b3b; --good: #0ca30c; --good-text: #0ca30c; --accent: #3987e5;
+      --surface-1: #13233f; --page: #0a1322;
+      --text-primary: #e8eff7; --text-secondary: #bbcbdd; --text-muted: #91a9c3;
+      --grid: #1f3559; --baseline: #2a4470; --border: rgba(236,245,255,0.12);
+      --seq-1: #5f7ea4; --seq-2: #4f83be; --seq-3: #3a6ca8; --seq-4: #c6982f;
+      --bar: #c6982f; --bar-track: #1d355a;
+      --critical: #df6f63; --good: #6ab186; --good-text: #8cd0a7;
+      --accent: #c6982f; --accent-2: #6ab186;
     }
   }
   * { box-sizing: border-box; margin: 0; }
-  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { font-family: "Avenir Next", "Montserrat", "Segoe UI", sans-serif; }
   .viz-root { background: var(--page); color: var(--text-primary); min-height: 100vh; padding: 28px clamp(16px,4vw,48px) 48px; }
   .brand { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
   .brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
-  .brand .tag { font-size: 12px; color: var(--text-secondary); border:1px solid var(--border); border-radius:99px; padding:2px 10px; }
+  .brand .tag { font-size: 12px; color: var(--text-primary); border:1px solid color-mix(in srgb, var(--accent) 50%, var(--border)); background: color-mix(in srgb, var(--accent) 16%, transparent); border-radius:99px; padding:2px 10px; }
   header .sub { color: var(--text-secondary); font-size: 13px; margin-top: 4px; max-width: 900px; }
-  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px 16px; margin-top: 16px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px 16px; margin-top: 16px; box-shadow: 0 10px 24px rgba(15,46,94,0.06); }
   .card h2 { font-size: 14px; font-weight: 650; }
   .card .desc { font-size: 12px; color: var(--text-secondary); margin: 3px 0 12px; }
-  .stepnum { display:inline-flex; width:20px; height:20px; border-radius:99px; background: var(--accent); color:#fff; font-size:11.5px; font-weight:700; align-items:center; justify-content:center; margin-right:7px; }
+  .stepnum { display:inline-flex; width:20px; height:20px; border-radius:99px; background: var(--accent); color:#112f5c; font-size:11.5px; font-weight:800; align-items:center; justify-content:center; margin-right:7px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   @media (max-width: 950px) { .grid2 { grid-template-columns: 1fr; } }
   .checks { display:flex; flex-wrap:wrap; gap: 8px 16px; margin-top: 6px; }
@@ -168,14 +170,14 @@ export function renderDashboard(report: Report): string {
   .score-pill { font-size:13px; font-weight:700; text-align:center; padding:3px 0; border-radius:7px; background: var(--bar-track); }
   .row .name { font-size:12.5px; }
   .row .name .meta { color: var(--text-muted); font-size:11px; }
-  .idlink { color: var(--accent); text-decoration: none; }
+  .idlink { color: var(--seq-3); text-decoration: none; }
   .idlink:hover { text-decoration: underline; }
   .chip { display:inline-block; font-size:10.5px; padding:2px 8px; border-radius:99px; border:1px solid var(--border); color:var(--text-secondary); white-space:nowrap; }
   .chip.elig { border-color: var(--good-text); color: var(--good-text); font-weight:600; }
   .chip.inelig { border-color: var(--critical); color: var(--critical); font-weight:600; }
   .chip.t-pursue { background: var(--seq-4); color:#fff; border:none; }
   .chip.t-qualify { background: var(--seq-2); color:#fff; border:none; }
-  .chip.t-monitor { background: var(--seq-1); color:#0b0b0b; border:none; }
+  .chip.t-monitor { background: var(--seq-1); color:#0f2e5e; border:none; }
   .chip.t-intel { background: transparent; color: var(--text-muted); border:1px solid var(--border); }
   .due { font-size:12px; color: var(--text-secondary); text-align:right; }
   .due .urgent { color: var(--critical); font-weight:650; }
@@ -186,7 +188,7 @@ export function renderDashboard(report: Report): string {
   .grant .g-why { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
   .grant .g-id { font-size: 11px; color: var(--text-muted); }
   footer { font-size: 11px; color: var(--text-muted); margin-top: 20px; line-height: 1.55; max-width: 1000px; }
-  .tooltip { position:fixed; pointer-events:none; background:var(--surface-1); border:1px solid var(--border); border-radius:8px; padding:8px 11px; font-size:12px; box-shadow:0 4px 16px rgba(0,0,0,.14); z-index:10; max-width:340px; display:none; }
+  .tooltip { position:fixed; pointer-events:none; background:var(--surface-1); border:1px solid var(--border); border-radius:8px; padding:8px 11px; font-size:12px; box-shadow:0 8px 20px rgba(15,46,94,0.18); z-index:10; max-width:340px; display:none; }
   .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--text-secondary); margin-top:10px; }
   .legend span::before { content:''; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:middle; }
   .lg-pursue::before { background: var(--seq-4); } .lg-qualify::before { background: var(--seq-2); }
@@ -196,6 +198,7 @@ export function renderDashboard(report: Report): string {
 <body class="viz-root">
 <header>
   <div class="brand"><h1>${esc(i.company)}</h1><span class="tag">GovReady Lab · Contract Map</span></div>
+  <div class="sub" style="margin-top:6px;color:var(--accent-2);font-weight:650;">Hutchrok Solutions Group, LLC</div>
   <div class="sub">Your business strengths, mapped to live federal contract &amp; grant opportunities.
   Lanes ${esc(i.naicsLanes.join(', '))} · swept ${esc(report.today)} · generated ${esc(report.generatedAt.slice(0, 10))}.</div>
 </header>

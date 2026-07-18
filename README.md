@@ -2,6 +2,11 @@
 
 Hutchrok Solutions Group LLC · the engine behind the GovReady Lab service line.
 
+This repository is intended to run as a standalone tool/app, even when linked from a
+parent repository. The parent repo should treat this project as an external launcher
+target (for example, linking to its deploy URL or invoking its CLI workflow), not as an
+embedded module.
+
 Takes a **client intake** + a raw **SAM.gov CSV export** and produces the two client
 deliverables from the service concept:
 
@@ -20,6 +25,21 @@ npm install
 
 Requires Node 18+. No API keys — it reads CSVs you export by hand from SAM.gov.
 
+For local personal use, you can also pull opportunities directly from SAM.gov API
+with your own key (see API mode below).
+
+## Brand Palette (Hutchrok)
+
+The dashboard theme follows the Hutchrok Solutions Group visual identity:
+
+- Navy: `#0F2E5E` (primary text, primary data emphasis)
+- Gold: `#C6982F` (accent, status emphasis)
+- Green: `#2F7A4F` (supporting brand color, positive state)
+- Light background: `#F4F5F7`
+- White surface: `#FFFFFF`
+
+Theme variables are implemented in [`src/dashboard.ts`](src/dashboard.ts).
+
 ## Generate a client map
 
 ```bash
@@ -30,6 +50,32 @@ npm run govready -- generate \
   --out out/acme \
   --today 2026-07-17
 ```
+
+### API mode (local/personal use)
+
+Set your key in local environment:
+
+```bash
+# PowerShell
+$env:SAM_GOV_API_KEY = "your-key"
+```
+
+Then generate using API source instead of contract CSV:
+
+```bash
+npm run govready -- generate \
+   --intake path/to/intake.json \
+   --sam-api \
+   --api-date-from 2026-01-01 \
+   --api-date-to 2026-12-31 \
+   --out out/personal
+```
+
+Notes:
+
+- Use one contract source at a time: `--contracts` or `--sam-api`.
+- Keep secrets local in `.env` or shell env vars. Do not commit API keys.
+- `.env.example` shows the local configuration shape.
 
 Run the built-in demo (uses `examples/`):
 
@@ -42,7 +88,14 @@ Flags:
 | Flag | Purpose |
 |---|---|
 | `-i, --intake` | Client intake JSON (required) |
-| `-c, --contracts` | SAM.gov Contract Opportunities CSV export (required) |
+| `-c, --contracts` | SAM.gov Contract Opportunities CSV export |
+| `--sam-api` | Pull contracts directly from SAM.gov API |
+| `--sam-api-key` | SAM.gov API key (optional if `SAM_GOV_API_KEY` is set) |
+| `--sam-api-endpoint` | Override the opportunities endpoint URL |
+| `--api-page-size` | API page size per request (default `250`) |
+| `--api-max-pages` | Max pages fetched per NAICS lane (default `8`) |
+| `--api-date-from` | Posted-from filter for API mode (`YYYY-MM-DD`) |
+| `--api-date-to` | Posted-to filter for API mode (`YYYY-MM-DD`) |
 | `-a, --assistance` | SAM.gov Assistance Listings CSV export (optional; enables grant panel) |
 | `-o, --out` | Output directory (default `out`) |
 | `-t, --today` | Reference date `YYYY-MM-DD` for deadline runway (default: today) |

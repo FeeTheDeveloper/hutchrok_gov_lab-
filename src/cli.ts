@@ -89,9 +89,12 @@ program
     const base = slug(intake.company);
     const xlsxPath = join(dir, `${base}-contract-map.xlsx`);
     const htmlPath = join(dir, `${base}-dashboard.html`);
+    const indexPath = join(dir, 'index.html');
 
     await writeWorkbook(report, xlsxPath);
-    writeFileSync(htmlPath, renderDashboard(report), 'utf8');
+    const dashboardHtml = renderDashboard(report);
+    writeFileSync(htmlPath, dashboardHtml, 'utf8');
+    writeFileSync(indexPath, dashboardHtml, 'utf8');
     if (opts.json) writeFileSync(join(dir, 'report.json'), JSON.stringify(report, null, 2), 'utf8');
 
     const s = report.stats;
@@ -105,6 +108,7 @@ program
     console.log(`\n  Deliverables:`);
     console.log(`    Contract Map   ${xlsxPath}`);
     console.log(`    Lab Dashboard  ${htmlPath}`);
+    console.log(`    Local Index    ${indexPath}`);
     if (opts.json) console.log(`    Report JSON    ${join(dir, 'report.json')}`);
     console.log('');
   });

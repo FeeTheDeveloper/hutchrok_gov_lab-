@@ -85,7 +85,7 @@ async function readBody(req: IncomingMessage): Promise<string> {
   for await (const chunk of req) {
     const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     total += buf.length;
-    if (total > MAX_BODY_BYTES) throw new HttpError(413, `Request body exceeds ${MAX_BODY_BYTES} bytes.`);
+    if (total > MAX_BODY_BYTES) throw new HttpError(413, 'Request body exceeds the maximum allowed size.');
     chunks.push(buf);
   }
   return Buffer.concat(chunks).toString('utf8');

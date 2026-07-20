@@ -43,11 +43,18 @@ const GenerateRequestSchema = z.object({
 }).superRefine((value, ctx) => {
   const hasContractsCsv = typeof value.contractsCsv === 'string' && value.contractsCsv.trim() !== '';
   const hasSamApi = value.samApi !== undefined;
-  if (hasContractsCsv === hasSamApi) {
+  if ((!hasContractsCsv && !hasSamApi) || (hasContractsCsv && hasSamApi)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'Provide exactly one contract source: contractsCsv or samApi.',
       path: ['contractsCsv'],
+    });
+  }
+  if (value.samApi?.dateFrom && value.samApi?.dateTo && value.samApi.dateFrom > value.samApi.dateTo) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'samApi.dateFrom must be on or before samApi.dateTo.',
+      path: ['samApi', 'dateFrom'],
     });
   }
 });
@@ -101,7 +108,7 @@ async function buildApiResponse(request: GenerateRequest) {
       }
     })()
     : await (async () => {
-      const apiKey = request.samApi?.apiKey || process.env.SAM_GOV_API_KEY;
+      const apiKey = request.samApi?.apiKey ?? process.env.SAM_GOV_API_KEY;
       if (!apiKey) {
         throw new HttpError(400, 'samApi requests require samApi.apiKey or SAM_GOV_API_KEY in the server environment.');
       }

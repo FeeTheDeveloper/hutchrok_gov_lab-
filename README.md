@@ -2,6 +2,11 @@
 
 Hutchrok Solutions Group LLC · the engine behind the GovReady Lab service line.
 
+This repository is intended to run as a standalone tool/app, even when linked from a
+parent repository. The parent repo should treat this project as an external launcher
+target (for example, linking to its deploy URL or invoking its CLI workflow), not as an
+embedded module.
+
 Takes a **client intake** + a raw **SAM.gov CSV export** and produces the two client
 deliverables from the service concept:
 
@@ -20,6 +25,24 @@ npm install
 
 Requires Node 18+. No API keys — it reads CSVs you export by hand from SAM.gov.
 
+For local personal use, you can also pull opportunities directly from SAM.gov API
+with your own key (see API mode below).
+
+You can also run the scoring engine as a local HTTP API for browser or automation
+clients (see HTTP API below).
+
+## Brand Palette (Hutchrok)
+
+The dashboard theme follows the Hutchrok Solutions Group visual identity:
+
+- Navy: `#0F2E5E` (primary text, primary data emphasis)
+- Gold: `#C6982F` (accent, status emphasis)
+- Green: `#2F7A4F` (supporting brand color, positive state)
+- Light background: `#F4F5F7`
+- White surface: `#FFFFFF`
+
+Theme variables are implemented in [`src/dashboard.ts`](src/dashboard.ts).
+
 ## Generate a client map
 
 ```bash
@@ -29,6 +52,87 @@ npm run govready -- generate \
   --assistance path/to/sam_assistance_export.csv \
   --out out/acme \
   --today 2026-07-17
+```
+
+### API mode (local/personal use)
+
+Set your key in local environment:
+
+```bash
+# PowerShell
+$env:SAM_GOV_API_KEY = "your-key"
+```
+
+Then generate using API source instead of contract CSV:
+
+```bash
+npm run govready -- generate \
+   --intake path/to/intake.json \
+   --sam-api \
+   --api-date-from 2026-01-01 \
+   --api-date-to 2026-12-31 \
+   --out out/personal
+```
+
+Notes:
+
+- Use one contract source at a time: `--contracts` or `--sam-api`.
+- Keep secrets local in `.env` or shell env vars. Do not commit API keys.
+- `.env.example` shows the local configuration shape.
+
+### HTTP API
+
+Start the local API server:
+
+```bash
+npm run api
+```
+
+Available routes:
+
+- `GET /health`
+- `POST /api/generate`
+
+The API is CORS-enabled for browser clients. `POST /api/generate` accepts either
+raw CSV text or a SAM.gov API request and returns the scored `report` plus the
+rendered `dashboardHtml`. Set `includeWorkbook` to `true` to also receive
+`workbookBase64`. For non-local use, set `GOVREADY_ALLOWED_ORIGIN` to the
+trusted frontend origin you want the server to allow.
+
+The CSV payload uses the same tolerant parser as the CLI: extra SAM.gov export
+columns are fine, while the most useful fields are the notice id/title, NAICS,
+type, set-aside, deadline, and description columns.
+
+Example request using CSV content:
+
+```bash
+curl -X POST http://localhost:3000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "intake": {
+      "company": "Lone Star Facility Services LLC",
+      "state": "TX",
+      "certifications": { "smallBusiness": true },
+      "naicsLanes": ["541611"],
+      "strengths": "facility support staffing",
+      "readiness": {}
+    },
+    "contractsCsv": "NoticeId,Title,NaicsCode\nABC-1,Example Opportunity,541611",
+    "includeWorkbook": true
+  }'
+```
+
+For live SAM.gov pulls, send `samApi` instead of `contractsCsv`:
+
+```json
+{
+  "intake": { "...": "..." },
+  "samApi": {
+    "apiKey": "your-key",
+    "dateFrom": "2026-01-01",
+    "dateTo": "2026-12-31"
+  }
+}
 ```
 
 Run the built-in demo (uses `examples/`):
@@ -42,7 +146,14 @@ Flags:
 | Flag | Purpose |
 |---|---|
 | `-i, --intake` | Client intake JSON (required) |
-| `-c, --contracts` | SAM.gov Contract Opportunities CSV export (required) |
+| `-c, --contracts` | SAM.gov Contract Opportunities CSV export |
+| `--sam-api` | Pull contracts directly from SAM.gov API |
+| `--sam-api-key` | SAM.gov API key (optional if `SAM_GOV_API_KEY` is set) |
+| `--sam-api-endpoint` | Override the opportunities endpoint URL |
+| `--api-page-size` | API page size per request (default `250`) |
+| `--api-max-pages` | Max pages fetched per NAICS lane (default `8`) |
+| `--api-date-from` | Posted-from filter for API mode (`YYYY-MM-DD`) |
+| `--api-date-to` | Posted-to filter for API mode (`YYYY-MM-DD`) |
 | `-a, --assistance` | SAM.gov Assistance Listings CSV export (optional; enables grant panel) |
 | `-o, --out` | Output directory (default `out`) |
 | `-t, --today` | Reference date `YYYY-MM-DD` for deadline runway (default: today) |

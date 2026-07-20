@@ -27,6 +27,17 @@ function tierFontColor(t: Tier): string {
 }
 
 export async function writeWorkbook(report: Report, outPath: string): Promise<void> {
+  const wb = buildWorkbook(report);
+  await wb.xlsx.writeFile(outPath);
+}
+
+export async function buildWorkbookBuffer(report: Report): Promise<Buffer> {
+  const wb = buildWorkbook(report);
+  const buffer = await wb.xlsx.writeBuffer();
+  return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+}
+
+function buildWorkbook(report: Report): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Hutchrok GovReady Lab';
   wb.created = new Date();
@@ -35,8 +46,7 @@ export async function writeWorkbook(report: Report, outPath: string): Promise<vo
   buildReadinessSheet(wb, report);
   buildGrantsSheet(wb, report);
   buildLegendSheet(wb, report);
-
-  await wb.xlsx.writeFile(outPath);
+  return wb;
 }
 
 function buildPipelineSheet(wb: ExcelJS.Workbook, report: Report) {

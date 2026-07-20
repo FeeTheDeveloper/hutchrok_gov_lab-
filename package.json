@@ -10,6 +10,8 @@
     "build": "tsc -p tsconfig.json",
     "govready": "tsx src/cli.ts",
     "portal": "tsx src/portal/server.ts",
+    "api": "tsx src/server.ts",
+    "server": "tsx src/server.ts",
     "demo": "tsx src/cli.ts generate --intake examples/intake.example.json --contracts examples/sam_contract_export.example.csv --assistance examples/sam_assistance_export.example.csv --out out/demo --today 2026-07-17",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -26,6 +28,7 @@
     "@anthropic-ai/sdk": "^0.112.2",
     "commander": "^12.1.0",
     "csv-parse": "^5.5.6",
+    "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
     "qrcode": "^1.5.4",
     "zod": "^3.23.8"

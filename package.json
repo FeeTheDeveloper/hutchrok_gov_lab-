@@ -9,6 +9,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "govready": "tsx src/cli.ts",
+    "api": "tsx src/server.ts",
+    "server": "tsx src/server.ts",
     "demo": "tsx src/cli.ts generate --intake examples/intake.example.json --contracts examples/sam_contract_export.example.csv --assistance examples/sam_assistance_export.example.csv --out out/demo --today 2026-07-17",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

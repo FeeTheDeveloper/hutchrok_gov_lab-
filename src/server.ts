@@ -115,8 +115,8 @@ async function buildApiResponse(request: GenerateRequest) {
           dateTo: request.samApi?.dateTo,
           naicsLanes: intake.naicsLanes,
         });
-      } catch {
-        throw new HttpError(502, 'SAM.gov API request failed.', true);
+      } catch (err) {
+        throw new HttpError(502, `SAM.gov API request failed: ${(err as Error).message}`);
       }
     })();
 
@@ -194,6 +194,7 @@ const server = createServer(async (req, res) => {
       sendJson(res, err.status, { error: err.expose ? err.message : 'Request failed.' });
       return;
     }
+    console.error(err);
     sendJson(res, 500, { error: 'Internal server error.' });
   }
 });

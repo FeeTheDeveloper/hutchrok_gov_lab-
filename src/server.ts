@@ -10,6 +10,22 @@ import { parseAssistanceCsv, parseContractsCsv } from './samParser.js';
 const PORT = Number(process.env.PORT || 3000);
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
 
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+    readonly expose = true,
+  ) {
+    super(message);
+  }
+}
+
+function isIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 const GenerateRequestSchema = z.object({
   intake: z.unknown(),
   contractsCsv: z.string().min(1).optional(),
@@ -19,10 +35,10 @@ const GenerateRequestSchema = z.object({
     endpoint: z.string().url().optional(),
     pageSize: z.number().int().positive().optional(),
     maxPages: z.number().int().positive().optional(),
-    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateFrom: z.string().refine(isIsoDate, 'dateFrom must be a real YYYY-MM-DD date.').optional(),
+    dateTo: z.string().refine(isIsoDate, 'dateTo must be a real YYYY-MM-DD date.').optional(),
   }).optional(),
-  today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  today: z.string().refine(isIsoDate, 'today must be a real YYYY-MM-DD date.').optional(),
   includeWorkbook: z.boolean().optional(),
 }).superRefine((value, ctx) => {
   const hasContractsCsv = typeof value.contractsCsv === 'string' && value.contractsCsv.trim() !== '';
@@ -62,33 +78,57 @@ async function readBody(req: IncomingMessage): Promise<string> {
   for await (const chunk of req) {
     const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     total += buf.length;
-    if (total > MAX_BODY_BYTES) throw new Error(`Request body exceeds ${MAX_BODY_BYTES} bytes.`);
+    if (total > MAX_BODY_BYTES) throw new HttpError(413, `Request body exceeds ${MAX_BODY_BYTES} bytes.`);
     chunks.push(buf);
   }
   return Buffer.concat(chunks).toString('utf8');
 }
 
 async function buildApiResponse(request: GenerateRequest) {
-  const intake = parseIntake(request.intake);
+  let intake;
+  try {
+    intake = parseIntake(request.intake);
+  } catch (err) {
+    throw new HttpError(400, (err as Error).message);
+  }
+
   const opportunities = request.contractsCsv
-    ? parseContractsCsv(request.contractsCsv)
+    ? (() => {
+      try {
+        return parseContractsCsv(request.contractsCsv);
+      } catch (err) {
+        throw new HttpError(400, `Could not parse contractsCsv: ${(err as Error).message}`);
+      }
+    })()
     : await (async () => {
       const apiKey = request.samApi?.apiKey || process.env.SAM_GOV_API_KEY;
       if (!apiKey) {
-        throw new Error('samApi requests require samApi.apiKey or SAM_GOV_API_KEY in the server environment.');
+        throw new HttpError(400, 'samApi requests require samApi.apiKey or SAM_GOV_API_KEY in the server environment.');
       }
-      return fetchContractsFromSamApi({
-        apiKey,
-        endpoint: request.samApi?.endpoint,
-        pageSize: request.samApi?.pageSize,
-        maxPages: request.samApi?.maxPages,
-        dateFrom: request.samApi?.dateFrom,
-        dateTo: request.samApi?.dateTo,
-        naicsLanes: intake.naicsLanes,
-      });
+      try {
+        return await fetchContractsFromSamApi({
+          apiKey,
+          endpoint: request.samApi?.endpoint,
+          pageSize: request.samApi?.pageSize,
+          maxPages: request.samApi?.maxPages,
+          dateFrom: request.samApi?.dateFrom,
+          dateTo: request.samApi?.dateTo,
+          naicsLanes: intake.naicsLanes,
+        });
+      } catch {
+        throw new HttpError(502, 'SAM.gov API request failed.', true);
+      }
     })();
 
-  const listings = request.assistanceCsv ? parseAssistanceCsv(request.assistanceCsv) : [];
+  const listings = request.assistanceCsv
+    ? (() => {
+      try {
+        return parseAssistanceCsv(request.assistanceCsv);
+      } catch (err) {
+        throw new HttpError(400, `Could not parse assistanceCsv: ${(err as Error).message}`);
+      }
+    })()
+    : [];
   const report = buildReport(intake, opportunities, listings, todayIso(request.today));
   const response: Record<string, unknown> = {
     report,
@@ -108,11 +148,14 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   try {
     rawJson = JSON.parse(rawBody);
   } catch (err) {
-    throw new Error(`Request body must be valid JSON: ${(err as Error).message}`);
+    throw new HttpError(400, `Request body must be valid JSON: ${(err as Error).message}`);
   }
 
-  const request = GenerateRequestSchema.parse(rawJson);
-  const response = await buildApiResponse(request);
+  const request = GenerateRequestSchema.safeParse(rawJson);
+  if (!request.success) {
+    throw new HttpError(400, request.error.issues.map((issue) => issue.message).join(' '));
+  }
+  const response = await buildApiResponse(request.data);
   sendJson(res, 200, response);
 }
 
@@ -147,7 +190,11 @@ const server = createServer(async (req, res) => {
       routes: ['GET /health', 'POST /api/generate'],
     });
   } catch (err) {
-    sendJson(res, 400, { error: (err as Error).message });
+    if (err instanceof HttpError) {
+      sendJson(res, err.status, { error: err.expose ? err.message : 'Request failed.' });
+      return;
+    }
+    sendJson(res, 500, { error: 'Internal server error.' });
   }
 });
 

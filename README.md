@@ -98,6 +98,10 @@ raw CSV text or a SAM.gov API request and returns the scored `report` plus the
 rendered `dashboardHtml`. Set `includeWorkbook` to `true` to also receive
 `workbookBase64`.
 
+The CSV payload uses the same tolerant parser as the CLI: extra SAM.gov export
+columns are fine, while the most useful fields are the notice id/title, NAICS,
+type, set-aside, deadline, and description columns.
+
 Example request using CSV content:
 
 ```bash

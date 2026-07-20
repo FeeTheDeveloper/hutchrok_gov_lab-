@@ -96,7 +96,8 @@ Available routes:
 The API is CORS-enabled for browser clients. `POST /api/generate` accepts either
 raw CSV text or a SAM.gov API request and returns the scored `report` plus the
 rendered `dashboardHtml`. Set `includeWorkbook` to `true` to also receive
-`workbookBase64`.
+`workbookBase64`. For non-local use, set `GOVREADY_ALLOWED_ORIGIN` to the
+trusted frontend origin you want the server to allow.
 
 The CSV payload uses the same tolerant parser as the CLI: extra SAM.gov export
 columns are fine, while the most useful fields are the notice id/title, NAICS,

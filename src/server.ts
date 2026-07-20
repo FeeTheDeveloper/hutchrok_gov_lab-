@@ -9,6 +9,7 @@ import { parseAssistanceCsv, parseContractsCsv } from './samParser.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
+const ALLOWED_ORIGIN = process.env.GOVREADY_ALLOWED_ORIGIN || '*';
 
 class HttpError extends Error {
   constructor(
@@ -62,7 +63,7 @@ const GenerateRequestSchema = z.object({
 type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
 
 function setCorsHeaders(res: ServerResponse): void {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
 }

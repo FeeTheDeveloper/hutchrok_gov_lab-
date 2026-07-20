@@ -31,7 +31,7 @@ const GenerateRequestSchema = z.object({
   contractsCsv: z.string().min(1).optional(),
   assistanceCsv: z.string().optional(),
   samApi: z.object({
-    apiKey: z.string().min(1).optional(),
+    apiKey: z.string().optional().transform((value) => value?.trim() || undefined),
     endpoint: z.string().url().optional(),
     pageSize: z.number().int().positive().optional(),
     maxPages: z.number().int().positive().optional(),

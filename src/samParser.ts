@@ -45,8 +45,11 @@ export function parseSamDate(raw: string): string | null {
 }
 
 function readCsvRows(path: string): Record<string, string>[] {
-  const text = readFileSync(path, 'utf8').replace(/^﻿/, ''); // strip BOM
-  return parse(text, {
+  return readCsvRowsFromText(readFileSync(path, 'utf8'));
+}
+
+function readCsvRowsFromText(text: string): Record<string, string>[] {
+  return parse(text.replace(/^﻿/, ''), {
     columns: true,
     skip_empty_lines: true,
     relax_column_count: true,
@@ -60,7 +63,11 @@ function readCsvRows(path: string): Record<string, string>[] {
  * Tolerant of column-name variations across SAM's export versions.
  */
 export function parseContracts(path: string): Opportunity[] {
-  const rows = readCsvRows(path);
+  return parseContractsCsv(readFileSync(path, 'utf8'));
+}
+
+export function parseContractsCsv(text: string): Opportunity[] {
+  const rows = readCsvRowsFromText(text);
   const out: Opportunity[] = [];
   for (const row of rows) {
     const get = accessor(row);
@@ -102,7 +109,11 @@ export function parseContracts(path: string): Opportunity[] {
  * Column names differ from the contracts export; kept tolerant.
  */
 export function parseAssistance(path: string): AssistanceListing[] {
-  const rows = readCsvRows(path);
+  return parseAssistanceCsv(readFileSync(path, 'utf8'));
+}
+
+export function parseAssistanceCsv(text: string): AssistanceListing[] {
+  const rows = readCsvRowsFromText(text);
   const out: AssistanceListing[] = [];
   for (const row of rows) {
     const get = accessor(row);

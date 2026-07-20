@@ -54,13 +54,7 @@ export const IntakeSchema = z.object({
     .default({}),
 });
 
-export function loadIntake(path: string): Intake {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(readFileSync(path, 'utf8'));
-  } catch (err) {
-    throw new Error(`Could not read/parse intake JSON at ${path}: ${(err as Error).message}`);
-  }
+export function parseIntake(raw: unknown): Intake {
   const parsed = IntakeSchema.safeParse(raw);
   if (!parsed.success) {
     const issues = parsed.error.issues
@@ -71,6 +65,16 @@ export function loadIntake(path: string): Intake {
   // Normalize NAICS to bare 6-digit strings where possible.
   parsed.data.naicsLanes = parsed.data.naicsLanes.map((n) => n.trim());
   return parsed.data as Intake;
+}
+
+export function loadIntake(path: string): Intake {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(path, 'utf8'));
+  } catch (err) {
+    throw new Error(`Could not read/parse intake JSON at ${path}: ${(err as Error).message}`);
+  }
+  return parseIntake(raw);
 }
 
 /**

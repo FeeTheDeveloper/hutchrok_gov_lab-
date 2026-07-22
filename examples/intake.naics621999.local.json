@@ -1,0 +1,25 @@
+{
+  "company": "Local NAICS Search",
+  "state": "Texas",
+  "certifications": {
+    "smallBusiness": true,
+    "sdvosb": false,
+    "vosb": false,
+    "wosb": false,
+    "edwosb": false,
+    "eightA": false,
+    "hubzone": false
+  },
+  "naicsLanes": ["621999"],
+  "strengths": "healthcare support services",
+  "readiness": {
+    "samRegistered": true,
+    "ueiCage": true,
+    "repsAndCerts": true,
+    "vetCertVerification": false,
+    "capabilityStatement": true,
+    "pastPerformanceFile": true,
+    "financialStatements": true,
+    "grantReadiness": false
+  }
+}

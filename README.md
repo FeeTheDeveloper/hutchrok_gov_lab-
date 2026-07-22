@@ -135,6 +135,25 @@ For live SAM.gov pulls, send `samApi` instead of `contractsCsv`:
 }
 ```
 
+### Quick NAICS Search (terminal list)
+
+Query SAM.gov directly and print a clean opportunity list in terminal:
+
+```bash
+npm run govready -- search \
+  --naics 621999 541611 \
+  --api-date-from 2026-01-01 \
+  --api-date-to 2026-12-31 \
+  --limit 50
+```
+
+Notes:
+
+- Uses `SAM_GOV_API_KEY` from your local `.env` by default.
+- You can pass `--sam-api-key` to override for one run.
+- Tune result volume with `--api-page-size`, `--api-max-pages`, and `--limit`.
+- Network hardening flags: `--api-timeout-ms`, `--api-retries`, `--api-retry-base-ms`.
+
 Run the built-in demo (uses `examples/`):
 
 ```bash
@@ -152,6 +171,9 @@ Flags:
 | `--sam-api-endpoint` | Override the opportunities endpoint URL |
 | `--api-page-size` | API page size per request (default `250`) |
 | `--api-max-pages` | Max pages fetched per NAICS lane (default `8`) |
+| `--api-timeout-ms` | Per-request timeout in milliseconds (default env `SAM_API_TIMEOUT_MS` or `30000`) |
+| `--api-retries` | Retry count for transient API errors/timeouts (default env `SAM_API_RETRIES` or `2`) |
+| `--api-retry-base-ms` | Base backoff delay in milliseconds (default env `SAM_API_RETRY_BASE_MS` or `800`) |
 | `--api-date-from` | Posted-from filter for API mode (`YYYY-MM-DD`) |
 | `--api-date-to` | Posted-to filter for API mode (`YYYY-MM-DD`) |
 | `-a, --assistance` | SAM.gov Assistance Listings CSV export (optional; enables grant panel) |

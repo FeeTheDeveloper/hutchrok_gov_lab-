@@ -40,6 +40,13 @@ function asNumber(raw: unknown, fallback: number): number {
   return raw;
 }
 
+function toSamDateParam(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[2]}/${iso[3]}/${iso[1]}`;
+  return value;
+}
+
 function pick(raw: unknown, paths: string[]): string {
   if (!raw || typeof raw !== 'object') return '';
   const root = raw as Record<string, unknown>;
@@ -143,8 +150,10 @@ async function fetchLanePage(
   u.searchParams.set('naicsCode', lane);
   u.searchParams.set('limit', String(limit));
   u.searchParams.set('offset', String(offset));
-  if (dateFrom) u.searchParams.set('postedFrom', dateFrom);
-  if (dateTo) u.searchParams.set('postedTo', dateTo);
+  const postedFrom = toSamDateParam(dateFrom);
+  const postedTo = toSamDateParam(dateTo);
+  if (postedFrom) u.searchParams.set('postedFrom', postedFrom);
+  if (postedTo) u.searchParams.set('postedTo', postedTo);
 
   let lastErr: Error | null = null;
   const attempts = retry.maxRetries + 1;

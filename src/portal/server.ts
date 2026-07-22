@@ -72,6 +72,15 @@ function html(res: ServerResponse, content: string, status = 200): void {
   res.end(content);
 }
 
+function json(res: ServerResponse, payload: unknown, status = 200): void {
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+  });
+  res.end(JSON.stringify(payload));
+}
+
 function redirect(res: ServerResponse, to: string): void {
   res.writeHead(303, { Location: to });
   res.end();
@@ -141,6 +150,9 @@ const server = createServer(async (req, res) => {
 
     // -- first-launch setup --
     if (!store.hasUsers()) {
+      if (path === '/api/auth/happy') {
+        return json(res, { error: 'Portal is not initialized. Create the first operator account at /setup.' }, 412);
+      }
       if (path === '/setup' && method === 'POST') {
         const f = parseForm(await readBody(req));
         const username = (f.username ?? '').trim();
@@ -158,6 +170,53 @@ const server = createServer(async (req, res) => {
     }
 
     // -- auth flow --
+    if (path === '/api/auth/happy' && method === 'POST') {
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(await readBody(req, 64 * 1024)) as Record<string, unknown>;
+      } catch {
+        return json(res, { error: 'Body must be valid JSON.' }, 400);
+      }
+
+      const username = String(body.username ?? '').trim();
+      const password = String(body.password ?? '');
+      const code = String(body.code ?? '').trim();
+
+      if (!username || !password || !code) {
+        return json(res, { error: 'username, password, and code are required.' }, 400);
+      }
+
+      const key = clientKey(req, username);
+      if (store.throttled(key)) {
+        return json(res, { error: 'Too many attempts. Try again in 15 minutes.' }, 429);
+      }
+
+      if (!store.verifyPassword(username, password)) {
+        store.recordFailure(key);
+        return json(res, { error: 'Invalid credentials.' }, 401);
+      }
+
+      const user = store.getUser(username);
+      if (!user) {
+        store.recordFailure(key);
+        return json(res, { error: 'Invalid credentials.' }, 401);
+      }
+
+      if (!user.totpEnabled || !user.totpSecret) {
+        return json(res, { error: '2FA is not enrolled for this user. Sign in via portal setup first.' }, 412);
+      }
+
+      if (!verifyTotp(user.totpSecret, code)) {
+        store.recordFailure(key);
+        return json(res, { error: 'Invalid code.' }, 401);
+      }
+
+      store.clearFailures(key);
+      const s = store.createSession(username, 'full');
+      setSession(res, s.token);
+      return json(res, { ok: true, username, stage: 'full' });
+    }
+
     if (path === '/login') {
       if (method === 'POST') {
         const f = parseForm(await readBody(req));

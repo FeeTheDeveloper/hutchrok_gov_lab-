@@ -214,6 +214,35 @@ npm run portal        # → http://localhost:4173
 | `GOVREADY_DATA_DIR` | User/2FA store location (default `.govready/`, gitignored) |
 | `GOVREADY_OUT_DIR` | Where generated maps live (default `out/`) |
 
+### Happy Authentication (programmatic sign-in)
+
+For local automation, the portal exposes a JSON endpoint that performs the
+happy-path login in one call (username + passphrase + TOTP code), then sets
+the same `gr_session` HttpOnly cookie used by the web UI.
+
+```bash
+curl -X POST http://localhost:4173/api/auth/happy \
+  -H "Content-Type: application/json" \
+  -c cookies.txt \
+  -d '{
+    "username": "your-operator-id",
+    "password": "your-passphrase",
+    "code": "123456"
+  }'
+```
+
+Then call authenticated routes using the saved cookie jar:
+
+```bash
+curl -b cookies.txt http://localhost:4173/portal
+```
+
+Response shape on success:
+
+```json
+{ "ok": true, "username": "your-operator-id", "stage": "full" }
+```
+
 ## Where the inputs come from (maps to the SOP)
 
 1. **Intake JSON** — the Part 1 Federal Readiness Assessment, structured. See

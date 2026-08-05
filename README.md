@@ -1,11 +1,11 @@
-# GovReady Lab — Phase 1 Contract Map Generator
+# GovReady Lab — Internal Federal Capture & Bid Operations
 
 Hutchrok Solutions Group LLC · the engine behind the GovReady Lab service line.
 
-This repository is intended to run as a standalone tool/app, even when linked from a
-parent repository. The parent repo should treat this project as an external launcher
-target (for example, linking to its deploy URL or invoking its CLI workflow), not as an
-embedded module.
+This repository is Hutchrok Solutions Group's local-first internal operating system for
+federal opportunity discovery, qualification, capture planning, proposal preparation,
+review controls, and award/loss tracking. It is not a public SaaS product. A parent repo
+should treat it as an external launcher target, not an embedded module.
 
 Takes a **client intake** + a raw **SAM.gov CSV export** and produces the two client
 deliverables from the service concept:
@@ -13,9 +13,9 @@ deliverables from the service concept:
 - **Contract Map** (`.xlsx`) — fit-scored pipeline, readiness, grant positioning, legend.
 - **Lab Dashboard** (`.html`) — the branded, self-contained client-facing dashboard.
 
-Zero infrastructure. This is the manual engine the SOP calls for in Stage 1–2; when a
-client's map has been produced this way twice, the Automation Mandate says build Phase 2
-(SAM.gov + Grants.gov API nightly pull). This repo is Phase 1.
+The original zero-infrastructure Contract Map workflow remains fully supported. The Bid
+Operations Engine extends that workflow after opportunity selection with local persistent
+projects, capture artifacts, proposal drafts, reviews, and explicit human approval gates.
 
 ## Install
 
@@ -300,3 +300,102 @@ examples/        Runnable demo intake + SAM-format CSVs
 All output carries the standard footer: operational business consulting — not legal, tax,
 or financial advice; no award guarantees; verify every requirement against the official
 SAM.gov / Grants.gov notice. Non-veteran clients receive expertise, not veteran benefits.
+
+## Bid Operations Engine
+
+The Bid Operations Engine turns a selected, scored SAM.gov notice into a persistent internal capture and proposal project while preserving the Contract Map generator, API mode, dashboard, portal, TOTP authentication, and Claude assistant. It is an in-house machine, not a public SaaS product.
+
+### Lifecycle
+
+```text
+Business Profile → Federal Readiness → Discovery → Qualification → Bid / No-Bid
+→ Capture → Solicitation Analysis → Compliance → Drafting → Internal Review
+→ Submission Readiness → Submitted → Award / Loss
+```
+
+Verified business data is stored separately from generated analysis, recommendations, drafts, and human approvals. A recommendation never authorizes pursuit or submission.
+
+### Local data directories
+
+Persistent records default to `.govready/`:
+
+```text
+.govready/
+  businesses/       validated business profiles
+  opportunities/    persistent opportunity projects
+  proposals/        assessments and artifact indexes
+  audit/             append-only daily JSONL audit events
+```
+
+Set `GOVREADY_DATA_DIR` to relocate the store. Draft workspaces go to `--out`; the API uses `GOVREADY_OUT_DIR` or `out/`.
+
+### Commands
+
+```bash
+npm run govready -- business validate \
+  --profile examples/business-profile.hutchrok.json --save --actor "King Fee"
+
+npm run govready -- bid create \
+  --business examples/business-profile.hutchrok.json \
+  --opportunity examples/opportunity-project.example.json \
+  --out out/hutchrok --actor "King Fee"
+
+npm run govready -- bid create \
+  --business examples/business-profile.hutchrok.json \
+  --report out/demo/report.json --notice-id NOTICE-ID --owner "King Fee"
+
+npm run govready -- bid assess \
+  --business examples/business-profile.hutchrok.json \
+  --opportunity examples/opportunity-project.example.json \
+  --analysis examples/solicitation-analysis.example.json \
+  --out out/hutchrok --actor "King Fee"
+
+npm run govready -- bid prepare \
+  --business examples/business-profile.hutchrok.json \
+  --opportunity examples/opportunity-project.example.json \
+  --analysis examples/solicitation-analysis.example.json \
+  --out out/hutchrok --actor "King Fee"
+
+npm run govready -- bid approve \
+  --project-id hsg-example-r408 --gate bidNoBid --actor "King Fee" \
+  --notes "Approved for capture subject to listed mitigations."
+
+npm run govready -- bid status \
+  --project-id hsg-example-r408 --to bid-review --actor "King Fee"
+```
+
+### Proposal artifacts and controls
+
+Each workspace is created at `<out>/<business-id>/<project-id>/proposal/` with a manifest, capture plan, JSON/XLSX compliance matrix, executive summary, technical and management sections, staffing, quality, transition, past performance, pricing narrative, submission checklist, risk register, and review log.
+
+All Markdown displays `DO NOT SUBMIT — DRAFT`, states that official solicitation instructions and amendments control, and uses `[REQUIRED INPUT: ...]` rather than inventing missing claims.
+
+Five independent gates control Bid / No-Bid approval, final pricing, representations and certifications, proposal release, and submission authorization. Active pursuit requires named-human Bid / No-Bid approval; `submitted` additionally requires submission authorization. No command or route submits, signs, certifies, prices, or authorizes teaming.
+
+### Bid Operations API
+
+The API binds to `127.0.0.1` by default and adds:
+
+- `GET|POST /api/businesses`
+- `GET|POST /api/bids`
+- `GET /api/bids/:id`
+- `POST /api/bids/:id/assess`
+- `POST /api/bids/:id/prepare`
+- `POST /api/bids/:id/approve`
+- `POST /api/bids/:id/status`
+- `POST /api/bids/:id/readiness-review`
+- `GET /api/bids/:id/compliance`
+- `GET /api/bids/:id/artifacts`
+
+Use `X-GovReady-Actor` or an `actor` body field to identify the operator in audit events.
+
+### Tests and design references
+
+```bash
+npm test
+npm run test:watch
+npm run typecheck
+npm run build
+```
+
+See [Bid Operations Architecture](docs/BID_OPERATIONS_ARCHITECTURE.md), [Proposal Workflow](docs/PROPOSAL_WORKFLOW.md), and [Data Model](docs/DATA_MODEL.md).

@@ -26,6 +26,9 @@
   "author": "Fee The Developer / Hutchrok Solutions Group LLC",
   "license": "UNLICENSED",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.2",
     "commander": "^12.1.0",

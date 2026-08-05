@@ -193,7 +193,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   sendJson(res, 200, response);
 }
 
-export const server = createServer(async (req, res) => {
+export async function requestHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     if (!req.url || !req.method) {
       sendJson(res, 400, { error: 'Malformed request.' });
@@ -306,7 +306,9 @@ export const server = createServer(async (req, res) => {
     console.error(err);
     sendJson(res, 500, { error: 'Internal server error.' });
   }
-});
+}
+
+export const server = createServer(requestHandler);
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   server.listen(PORT, HOST, () => {

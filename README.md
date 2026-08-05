@@ -135,6 +135,25 @@ For live SAM.gov pulls, send `samApi` instead of `contractsCsv`:
 }
 ```
 
+### Deploy the stateless API to Vercel
+
+The repository includes Vercel Node Function entry points for:
+
+- `GET /api`
+- `GET /api/health`
+- `POST /api/generate`
+
+Import the repository in Vercel, keep the project root at the repository root,
+and use the detected `npm run build` command. Add `SAM_GOV_API_KEY` in Vercel
+Project Settings when live SAM.gov requests are needed. Set
+`GOVREADY_ALLOWED_ORIGIN` to the exact browser origin allowed to call the API.
+
+The Bid Operations routes and authenticated portal intentionally remain local-only.
+They persist users, sessions, bids, and generated files on the local filesystem;
+Vercel Functions have ephemeral storage and therefore cannot safely host those
+features without an external database and object store. The deployed generation
+endpoint is stateless and returns its dashboard/workbook in the response.
+
 ### Quick NAICS Search (terminal list)
 
 Query SAM.gov directly and print a clean opportunity list in terminal:

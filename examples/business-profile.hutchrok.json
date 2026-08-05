@@ -1,0 +1,76 @@
+{
+  "businessId": "hutchrok-solutions-group",
+  "legalBusinessName": "Hutchrok Solutions Group LLC",
+  "state": "TX",
+  "address": {
+    "line1": "990 Texas 5",
+    "city": "McKinney",
+    "state": "TX",
+    "postalCode": "75069",
+    "country": "US"
+  },
+  "website": "https://hutchrok.com",
+  "primaryContact": {
+    "name": "King Fee",
+    "title": "Authorized Human Approver"
+  },
+  "email": "verify-contact@hutchrok.invalid",
+  "phone": "214-471-1386",
+  "federal": {
+    "samStatus": "pending",
+    "sbaAccountStatus": "pending"
+  },
+  "certifications": {
+    "smallBusiness": { "status": "pending" },
+    "sdvosb": { "status": "pending" },
+    "vosb": { "status": "pending" },
+    "eightA": { "status": "not-held" },
+    "hubzone": { "status": "not-held" },
+    "wosb": { "status": "not-held" },
+    "edwosb": { "status": "not-held" },
+    "dbe": { "status": "not-held" },
+    "mbe": { "status": "not-held" },
+    "other": []
+  },
+  "serviceAlignment": {
+    "primaryNaics": "541611",
+    "secondaryNaics": ["541618"],
+    "pscCodes": ["R408", "R499"],
+    "keywords": ["federal readiness", "capture planning", "proposal operations"],
+    "coreCapabilities": [
+      "Federal contract readiness operations",
+      "Opportunity qualification and capture planning",
+      "Proposal workflow and compliance support"
+    ],
+    "differentiators": [
+      "Structured readiness-to-capture operating workflow",
+      "Benefit-integrity guardrails for veteran programs"
+    ],
+    "geographicServiceArea": ["Texas", "United States — remote delivery"],
+    "agenciesOfInterest": ["Small Business Administration", "Department of Veterans Affairs"]
+  },
+  "readiness": {
+    "capabilityStatementAvailable": false,
+    "insurance": false,
+    "bonding": false,
+    "accountingSystem": false,
+    "cybersecurityReadiness": "not-assessed",
+    "keyPersonnel": false,
+    "equipment": true,
+    "pastPerformance": false,
+    "teamingPartners": false,
+    "subcontractingReadiness": false
+  },
+  "proposalAssets": {
+    "companyOverview": {
+      "content": "Hutchrok Solutions Group LLC operates GovReady Lab as an internal federal readiness, capture, and proposal-operations system.",
+      "verified": true,
+      "source": "Hutchrok GovReady Lab service concept",
+      "lastReviewedAt": "2026-08-05T12:00:00.000Z"
+    },
+    "pastPerformanceRecords": [],
+    "keyPersonnelResumes": []
+  },
+  "createdAt": "2026-08-05T12:00:00.000Z",
+  "updatedAt": "2026-08-05T12:00:00.000Z"
+}

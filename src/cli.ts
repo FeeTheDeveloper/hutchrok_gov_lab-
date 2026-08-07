@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { Command } from 'commander';
 import { loadIntake } from './intake.js';
 import { parseContracts, parseAssistance } from './samParser.js';
@@ -28,6 +28,19 @@ function isIsoDate(value: string): boolean {
 function truncate(value: string, max: number): string {
   if (value.length <= max) return value;
   return `${value.slice(0, Math.max(0, max - 1))}…`;
+}
+
+function csvCell(value: unknown): string {
+  const text = value === null || value === undefined ? '' : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function searchAction(type: string): string {
+  if (type === 'SOLICITATION') return 'Review for bid';
+  if (type === 'SOURCES_SOUGHT') return 'Respond with capability statement';
+  if (type === 'PRESOLICITATION') return 'Track and prepare';
+  if (type === 'AWARD') return 'Market intelligence';
+  return 'Review notice';
 }
 
 function pad(value: string, width: number): string {
@@ -158,6 +171,7 @@ program
   .option('--api-date-from <YYYY-MM-DD>', 'Posted-from date filter (default: 90 days ago)')
   .option('--api-date-to <YYYY-MM-DD>', 'Posted-to date filter (default: today)')
   .option('--limit <n>', 'Max rows to print (default: 50)', '50')
+  .option('--csv <path>', 'Write all matched opportunities to a CSV file')
   .action(async (opts) => {
     const apiKey = (opts.samApiKey as string | undefined) || process.env.SAM_GOV_API_KEY;
     if (!apiKey) {
@@ -207,6 +221,27 @@ program
     console.log(`  NAICS: ${naicsLanes.join(', ')}`);
     console.log(`  Date range: ${from} to ${to}`);
     console.log(`  Total found: ${sorted.length}`);
+
+    if (opts.csv) {
+      const csvPath = resolve(String(opts.csv));
+      const headers = [
+        'notice_id', 'posted_date', 'response_deadline', 'notice_type', 'recommended_action',
+        'set_aside', 'naics', 'agency', 'office', 'place_of_performance_state', 'title',
+        'active', 'sam_gov_link', 'description',
+      ];
+      const csvRows = sorted.map((o) => [
+        o.noticeId, o.postedDate, o.responseDeadline, o.rawType || o.type, searchAction(o.type),
+        o.rawSetAside || o.setAside, o.naics, o.agency, o.office, o.popState, o.title,
+        o.active, o.link, o.description,
+      ]);
+      mkdirSync(dirname(csvPath), { recursive: true });
+      writeFileSync(
+        csvPath,
+        `\uFEFF${[headers, ...csvRows].map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`,
+        'utf8',
+      );
+      console.log(`  CSV export: ${csvPath}`);
+    }
 
     if (!rows.length) {
       console.log('\n  No opportunities returned for the selected filters.\n');

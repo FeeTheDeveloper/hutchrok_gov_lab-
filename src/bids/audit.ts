@@ -24,3 +24,14 @@ export function appendAuditEvent(dataDir: string, event: AuditEvent): string {
 export function readAuditEvents(path: string): AuditEvent[] {
   return readFileSync(path, 'utf8').split(/\r?\n/).filter(Boolean).map((line) => AuditEventSchema.parse(JSON.parse(line)));
 }
+
+export interface AuditSink {
+  append(event: AuditEvent): Promise<void>;
+}
+
+export class FileAuditSink implements AuditSink {
+  constructor(private readonly dataDir: string) {}
+  async append(event: AuditEvent): Promise<void> {
+    appendAuditEvent(this.dataDir, event);
+  }
+}

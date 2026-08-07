@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
@@ -10,7 +11,17 @@ import { parseIntake } from './intake.js';
 import { fetchContractsFromSamApi } from './samApi.js';
 import { parseAssistanceCsv, parseContractsCsv } from './samParser.js';
 import { BusinessProfileSchema } from './business/index.js';
-import { BidOperationsService, GovReadyStore, OpportunityProjectSchema, SolicitationAnalysisSchema } from './bids/index.js';
+import {
+  BidOperationsService,
+  GovReadyStore,
+  OpportunityProjectSchema,
+  SolicitationAnalysisSchema,
+  SupabaseArtifactBackend,
+  SupabaseAuditSink,
+  SupabaseGovReadyStore,
+  createServiceRoleClient,
+  supabaseConfigured,
+} from './bids/index.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
@@ -98,6 +109,10 @@ function actor(req: IncomingMessage, body?: Record<string, unknown>): string {
 }
 
 function bidService(): BidOperationsService {
+  if (supabaseConfigured()) {
+    const client = createServiceRoleClient();
+    return new BidOperationsService(new SupabaseGovReadyStore(client), new SupabaseAuditSink(client), new SupabaseArtifactBackend(client));
+  }
   return new BidOperationsService(new GovReadyStore());
 }
 
@@ -193,7 +208,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   sendJson(res, 200, response);
 }
 
-export const server = createServer(async (req, res) => {
+export async function requestHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     if (!req.url || !req.method) {
       sendJson(res, 400, { error: 'Malformed request.' });
@@ -209,8 +224,13 @@ export const server = createServer(async (req, res) => {
 
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
-    if (req.method === 'GET' && url.pathname === '/health') {
+    if (req.method === 'GET' && (url.pathname === '/health' || url.pathname === '/api/health')) {
       sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api') {
+      sendJson(res, 200, { name: 'GovReady Lab API', status: 'ready', routes: ['GET /api/health', 'POST /api/generate'] });
       return;
     }
 
@@ -220,23 +240,23 @@ export const server = createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && url.pathname === '/api/businesses') {
-      sendJson(res, 200, { businesses: bidService().store.listBusinesses() }); return;
+      sendJson(res, 200, { businesses: await bidService().store.listBusinesses() }); return;
     }
     if (req.method === 'POST' && url.pathname === '/api/businesses') {
       const body = await readJson(req);
       const parsed = BusinessProfileSchema.safeParse(body.profile ?? body);
       if (!parsed.success) throw new HttpError(400, parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(' '));
-      const saved = bidService().saveBusiness(parsed.data, actor(req, body));
+      const saved = await bidService().saveBusiness(parsed.data, actor(req, body));
       sendJson(res, 201, { business: saved.profile }); return;
     }
     if (req.method === 'GET' && url.pathname === '/api/bids') {
-      sendJson(res, 200, { bids: bidService().store.listOpportunities() }); return;
+      sendJson(res, 200, { bids: await bidService().store.listOpportunities() }); return;
     }
     if (req.method === 'POST' && url.pathname === '/api/bids') {
       const body = await readJson(req);
       const parsed = OpportunityProjectSchema.safeParse(body.opportunity ?? body);
       if (!parsed.success) throw new HttpError(400, parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(' '));
-      try { const saved = bidService().saveOpportunity(parsed.data, actor(req, body)); sendJson(res, 201, { bid: saved.project }); }
+      try { const saved = await bidService().saveOpportunity(parsed.data, actor(req, body)); sendJson(res, 201, { bid: saved.project }); }
       catch (err) { throw new HttpError(400, (err as Error).message); }
       return;
     }
@@ -247,47 +267,53 @@ export const server = createServer(async (req, res) => {
       const action = bidMatch[2];
       const service = bidService();
       let project;
-      try { project = service.store.getOpportunity(projectId); }
+      try { project = await service.store.getOpportunity(projectId); }
       catch { throw new HttpError(404, `Bid project ${projectId} was not found.`); }
       if (req.method === 'GET' && !action) { sendJson(res, 200, { bid: project }); return; }
       if (req.method === 'POST' && action === 'assess') {
         const body = await readJson(req);
         const parsed = SolicitationAnalysisSchema.safeParse(body.analysis);
         if (!parsed.success) throw new HttpError(400, parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(' '));
-        const business = service.store.getBusiness(project.businessId);
-        const assessed = service.assess(business, project, parsed.data, actor(req, body), { ratings: body.ratings as never });
+        const business = await service.store.getBusiness(project.businessId);
+        const assessed = await service.assess(business, project, parsed.data, actor(req, body), { ratings: body.ratings as never });
         sendJson(res, 200, { assessment: assessed.result }); return;
       }
       if (req.method === 'POST' && action === 'prepare') {
         const body = await readJson(req);
         const parsed = SolicitationAnalysisSchema.safeParse(body.analysis);
         if (!parsed.success) throw new HttpError(400, parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(' '));
-        const business = service.store.getBusiness(project.businessId);
-        const prepared = await service.prepare({ business, opportunity: project, analysis: parsed.data, actor: actor(req, body), outputRoot: resolve(process.env.GOVREADY_OUT_DIR || 'out'), ratings: body.ratings as never });
+        const business = await service.store.getBusiness(project.businessId);
+        const outputRoot = service.artifacts ? resolve(tmpdir(), 'govready-proposals') : resolve(process.env.GOVREADY_OUT_DIR || 'out');
+        const prepared = await service.prepare({ business, opportunity: project, analysis: parsed.data, actor: actor(req, body), outputRoot, ratings: body.ratings as never });
         sendJson(res, 201, { workspaceDir: prepared.workspaceDir, manifest: prepared.manifest, files: prepared.files }); return;
       }
       if (req.method === 'POST' && action === 'approve') {
         const body = await readJson(req); const gate = String(body.gate ?? '');
         const allowed = ['bidNoBid', 'finalPricing', 'representationsAndCertifications', 'proposalRelease', 'submissionAuthorization'] as const;
         if (!allowed.includes(gate as typeof allowed[number])) throw new HttpError(400, `gate must be one of: ${allowed.join(', ')}`);
-        const updated = service.approveGate(projectId, gate as keyof typeof project.approvals, actor(req, body), typeof body.notes === 'string' ? body.notes : undefined);
+        const updated = await service.approveGate(projectId, gate as keyof typeof project.approvals, actor(req, body), typeof body.notes === 'string' ? body.notes : undefined);
         sendJson(res, 200, { bid: updated, submitted: false }); return;
       }
       if (req.method === 'POST' && action === 'status') {
         const body = await readJson(req);
-        try { sendJson(res, 200, { bid: service.changeStatus(projectId, String(body.status) as typeof project.status, actor(req, body)) }); }
+        try { sendJson(res, 200, { bid: await service.changeStatus(projectId, String(body.status) as typeof project.status, actor(req, body)) }); }
         catch (err) { throw new HttpError(400, (err as Error).message); }
         return;
       }
       if (req.method === 'POST' && action === 'readiness-review') {
         const body = await readJson(req);
         if (typeof body.passed !== 'boolean' || !Array.isArray(body.findings) || !body.findings.every((item) => typeof item === 'string')) throw new HttpError(400, 'passed must be boolean and findings must be a string array.');
-        const path = service.recordSubmissionReadinessReview(projectId, actor(req, body), body.passed, body.findings as string[]);
+        const path = await service.recordSubmissionReadinessReview(projectId, actor(req, body), body.passed, body.findings as string[]);
         sendJson(res, 201, { artifact: path, submitted: false }); return;
       }
-      if (req.method === 'GET' && action === 'artifacts') { sendJson(res, 200, service.listArtifacts(projectId)); return; }
+      if (req.method === 'GET' && action === 'artifacts') { sendJson(res, 200, await service.listArtifacts(projectId)); return; }
       if (req.method === 'GET' && action === 'compliance') {
-        const index = service.listArtifacts(projectId) as { workspaceDir?: string };
+        if (service.artifacts) {
+          const content = await service.artifacts.readFileContent(projectId, 'compliance-matrix.json');
+          if (!content) throw new HttpError(404, 'Compliance matrix has not been generated.');
+          sendJson(res, 200, JSON.parse(content)); return;
+        }
+        const index = await service.listArtifacts(projectId) as { workspaceDir?: string };
         const path = index.workspaceDir ? resolve(index.workspaceDir, 'compliance-matrix.json') : '';
         if (!path || !existsSync(path)) throw new HttpError(404, 'Compliance matrix has not been generated.');
         sendJson(res, 200, JSON.parse(readFileSync(path, 'utf8'))); return;
@@ -296,7 +322,7 @@ export const server = createServer(async (req, res) => {
 
     sendJson(res, 404, {
       error: 'Not found.',
-      routes: ['GET /health', 'POST /api/generate', 'GET|POST /api/businesses', 'GET|POST /api/bids', 'GET /api/bids/:id', 'POST /api/bids/:id/assess', 'POST /api/bids/:id/prepare', 'POST /api/bids/:id/approve', 'POST /api/bids/:id/status', 'POST /api/bids/:id/readiness-review', 'GET /api/bids/:id/compliance', 'GET /api/bids/:id/artifacts'],
+      routes: ['GET /health', 'GET /api/health', 'POST /api/generate', 'GET|POST /api/businesses', 'GET|POST /api/bids', 'GET /api/bids/:id', 'POST /api/bids/:id/assess', 'POST /api/bids/:id/prepare', 'POST /api/bids/:id/approve', 'POST /api/bids/:id/status', 'POST /api/bids/:id/readiness-review', 'GET /api/bids/:id/compliance', 'GET /api/bids/:id/artifacts'],
     });
   } catch (err) {
     if (err instanceof HttpError) {
@@ -306,7 +332,15 @@ export const server = createServer(async (req, res) => {
     console.error(err);
     sendJson(res, 500, { error: 'Internal server error.' });
   }
-});
+}
+
+export const server = createServer(requestHandler);
+
+// Vercel's zero-config Node.js detection deploys this file directly as the
+// project's single root Function when it finds a custom http.Server entry
+// point here, bypassing the api/ directory entirely — it requires a default
+// export shaped like a request handler.
+export default requestHandler;
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   server.listen(PORT, HOST, () => {

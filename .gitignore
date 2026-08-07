@@ -6,4 +6,8 @@ out/
 .env
 .env.*
 .govready/
+.vercel/
 !.env.example
+
+.vercel
+.env*

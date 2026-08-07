@@ -26,8 +26,12 @@
   "author": "Fee The Developer / Hutchrok Solutions Group LLC",
   "license": "UNLICENSED",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.2",
+    "@supabase/supabase-js": "^2.112.1",
     "commander": "^12.1.0",
     "csv-parse": "^5.5.6",
     "dotenv": "^17.4.2",

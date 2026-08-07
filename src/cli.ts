@@ -254,13 +254,13 @@ business
   .option('--save', 'Persist the validated profile', false)
   .option('--data-dir <path>', 'Override GOVREADY_DATA_DIR')
   .option('--actor <name>', 'Human operator recorded in the audit log', 'cli-operator')
-  .action((opts) => {
+  .action(async (opts) => {
     const profile = loadBusinessProfile(opts.profile);
     console.log(`\n  Valid business profile: ${profile.legalBusinessName} (${profile.businessId})`);
     console.log(`  SAM: ${profile.federal.samStatus} · primary NAICS: ${profile.serviceAlignment.primaryNaics}`);
     if (opts.save) {
       const service = new BidOperationsService(new GovReadyStore(opts.dataDir));
-      const saved = service.saveBusiness(profile, opts.actor);
+      const saved = await service.saveBusiness(profile, opts.actor);
       console.log(`  Saved: ${saved.path}`);
     }
     console.log('');
@@ -279,7 +279,7 @@ bid
   .option('--out <dir>', 'Also write an opportunity-project.json working copy')
   .option('--data-dir <path>', 'Override GOVREADY_DATA_DIR')
   .option('--actor <name>', 'Human operator recorded in the audit log', 'cli-operator')
-  .action((opts) => {
+  .action(async (opts) => {
     const profile = loadBusinessProfile(opts.business);
     const manual = Boolean(opts.opportunity);
     const reportImport = Boolean(opts.report || opts.noticeId);
@@ -293,8 +293,8 @@ bid
       project = projectFromScoredOpportunity(profile, findScoredOpportunity(report, opts.noticeId), opts.owner);
     }
     const service = new BidOperationsService(new GovReadyStore(opts.dataDir));
-    service.saveBusiness(profile, opts.actor);
-    const saved = service.saveOpportunity(project, opts.actor);
+    await service.saveBusiness(profile, opts.actor);
+    const saved = await service.saveOpportunity(project, opts.actor);
     if (opts.out) {
       mkdirSync(opts.out, { recursive: true });
       writeFileSync(join(opts.out, 'opportunity-project.json'), JSON.stringify(project, null, 2), 'utf8');
@@ -315,15 +315,15 @@ bid
   .option('--out <dir>', 'Also write bid-assessment.json to this directory')
   .option('--data-dir <path>', 'Override GOVREADY_DATA_DIR')
   .option('--actor <name>', 'Human operator recorded in the audit log', 'cli-operator')
-  .action((opts) => {
+  .action(async (opts) => {
     const profile = loadBusinessProfile(opts.business);
     const project = loadOpportunityProject(opts.opportunity);
     const analysis = loadSolicitationAnalysis(opts.analysis);
     const ratings = opts.ratings ? JSON.parse(readFileSync(opts.ratings, 'utf8')) : undefined;
     const service = new BidOperationsService(new GovReadyStore(opts.dataDir));
-    service.saveBusiness(profile, opts.actor);
-    const persistentProject = service.ensureOpportunity(project, opts.actor);
-    const assessed = service.assess(profile, persistentProject, analysis, opts.actor, { ratings });
+    await service.saveBusiness(profile, opts.actor);
+    const persistentProject = await service.ensureOpportunity(project, opts.actor);
+    const assessed = await service.assess(profile, persistentProject, analysis, opts.actor, { ratings });
     if (opts.out) { mkdirSync(opts.out, { recursive: true }); writeFileSync(join(opts.out, 'bid-assessment.json'), JSON.stringify(assessed.result, null, 2), 'utf8'); }
     console.log(`\n  Recommendation: ${assessed.result.recommendedDecision.toUpperCase()} · ${assessed.result.weightedScore}/100`);
     console.log(`  Human approval: ${assessed.result.humanApproval.status.toUpperCase()} — the assessment did not change approval state.`);
@@ -346,8 +346,8 @@ bid
     const analysis = loadSolicitationAnalysis(opts.analysis);
     const ratings = opts.ratings ? JSON.parse(readFileSync(opts.ratings, 'utf8')) : undefined;
     const service = new BidOperationsService(new GovReadyStore(opts.dataDir));
-    service.saveBusiness(profile, opts.actor);
-    const persistentProject = service.ensureOpportunity(project, opts.actor);
+    await service.saveBusiness(profile, opts.actor);
+    const persistentProject = await service.ensureOpportunity(project, opts.actor);
     const prepared = await service.prepare({ business: profile, opportunity: persistentProject, analysis, ratings, actor: opts.actor, outputRoot: opts.out });
     console.log(`\n  Draft proposal workspace: ${prepared.workspaceDir}`);
     console.log(`  Artifacts: ${prepared.files.length}`);
@@ -362,11 +362,11 @@ bid
   .requiredOption('--actor <name>', 'Named human approver')
   .option('--notes <text>', 'Approval rationale or constraints')
   .option('--data-dir <path>', 'Override GOVREADY_DATA_DIR')
-  .action((opts) => {
+  .action(async (opts) => {
     const allowed = ['bidNoBid', 'finalPricing', 'representationsAndCertifications', 'proposalRelease', 'submissionAuthorization'] as const;
     if (!allowed.includes(opts.gate)) throw new Error(`--gate must be one of: ${allowed.join(', ')}`);
     const service = new BidOperationsService(new GovReadyStore(opts.dataDir));
-    const updated = service.approveGate(opts.projectId, opts.gate, opts.actor, opts.notes);
+    const updated = await service.approveGate(opts.projectId, opts.gate, opts.actor, opts.notes);
     console.log(`\n  Human approval recorded: ${opts.gate} · ${updated.approvals[opts.gate as keyof typeof updated.approvals].status}`);
     console.log('  No bid was submitted and no legal commitment was made.\n');
   });
@@ -378,9 +378,9 @@ bid
   .requiredOption('--to <status>', 'Target lifecycle status')
   .requiredOption('--actor <name>', 'Named human operator')
   .option('--data-dir <path>', 'Override GOVREADY_DATA_DIR')
-  .action((opts) => {
+  .action(async (opts) => {
     const service = new BidOperationsService(new GovReadyStore(opts.dataDir));
-    const updated = service.changeStatus(opts.projectId, opts.to, opts.actor);
+    const updated = await service.changeStatus(opts.projectId, opts.to, opts.actor);
     console.log(`\n  Status changed: ${updated.projectId} -> ${updated.status}\n`);
   });
 

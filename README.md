@@ -135,24 +135,34 @@ For live SAM.gov pulls, send `samApi` instead of `contractsCsv`:
 }
 ```
 
-### Deploy the stateless API to Vercel
+### Deploy to Vercel
 
 The repository includes Vercel Node Function entry points for:
 
 - `GET /api`
 - `GET /api/health`
-- `POST /api/generate`
+- `POST /api/generate` — stateless; returns its dashboard/workbook in the response.
+- `GET|POST /api/businesses`, `GET|POST /api/bids`, and the `/api/bids/:id/*`
+  Bid Operations routes (`assess`, `prepare`, `approve`, `status`,
+  `readiness-review`, `compliance`, `artifacts`) — backed by Supabase.
 
 Import the repository in Vercel, keep the project root at the repository root,
 and use the detected `npm run build` command. Add `SAM_GOV_API_KEY` in Vercel
 Project Settings when live SAM.gov requests are needed. Set
 `GOVREADY_ALLOWED_ORIGIN` to the exact browser origin allowed to call the API.
 
-The Bid Operations routes and authenticated portal intentionally remain local-only.
-They persist users, sessions, bids, and generated files on the local filesystem;
-Vercel Functions have ephemeral storage and therefore cannot safely host those
-features without an external database and object store. The deployed generation
-endpoint is stateless and returns its dashboard/workbook in the response.
+Bid Operations data (businesses, opportunities, audit trail, and generated
+proposal artifacts) is stateless-storage on Vercel by design — the platform's
+functions have ephemeral, per-invocation filesystems. This app persists that
+data to Supabase (Postgres for records, Storage for generated proposal files)
+whenever `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set in the
+environment; the Vercel-Supabase integration provisions both automatically.
+Locally, omit those two variables to keep writing to `.govready/` and `out/`
+on disk instead — the CLI always uses the local filesystem store regardless.
+
+The authenticated portal (login/2FA) remains local-only by design — it has no
+Vercel entry point and still persists users/sessions on the local filesystem
+and in memory.
 
 ### Quick NAICS Search (terminal list)
 

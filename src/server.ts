@@ -336,10 +336,9 @@ export async function requestHandler(req: IncomingMessage, res: ServerResponse):
 
 export const server = createServer(requestHandler);
 
-// Vercel's zero-config Node.js detection deploys this file directly as the
-// project's single root Function when it finds a custom http.Server entry
-// point here, bypassing the api/ directory entirely — it requires a default
-// export shaped like a request handler.
+// Vercel only builds Functions from files under /api, so this file is not
+// deployed directly — api/index.ts and api/[...path].ts re-export this
+// default to route every request into requestHandler above.
 export default requestHandler;
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {

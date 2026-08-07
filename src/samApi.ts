@@ -147,7 +147,7 @@ async function fetchLanePage(
 ): Promise<unknown[]> {
   const u = new URL(endpoint);
   u.searchParams.set('api_key', apiKey);
-  u.searchParams.set('naicsCode', lane);
+  u.searchParams.set('ncode', lane);
   u.searchParams.set('limit', String(limit));
   u.searchParams.set('offset', String(offset));
   const postedFrom = toSamDateParam(dateFrom);

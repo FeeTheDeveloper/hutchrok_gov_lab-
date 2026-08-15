@@ -101,8 +101,18 @@ function mapOpportunity(raw: unknown): Opportunity | null {
   if (!noticeId && !title) return null;
 
   const rawType = pick(raw, ['type', 'Type', 'noticeType', 'baseType']);
-  const rawSetAsideCode = pick(raw, ['setAsideCode', 'SetASideCode', 'setASideCode']);
-  const rawSetAsideLabel = pick(raw, ['setAside', 'SetASide', 'setAsideDescription']);
+  const rawSetAsideCode = pick(raw, [
+    'typeOfSetAside',
+    'setAsideCode',
+    'SetASideCode',
+    'setASideCode',
+  ]);
+  const rawSetAsideLabel = pick(raw, [
+    'typeOfSetAsideDescription',
+    'setAside',
+    'SetASide',
+    'setAsideDescription',
+  ]);
 
   const activeRaw = pick(raw, ['active', 'isActive']);
   const inactiveRaw = pick(raw, ['archived', 'isArchived', 'inactive']);
